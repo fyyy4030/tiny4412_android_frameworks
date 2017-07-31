@@ -24,6 +24,7 @@ LOCAL_SRC_FILES += \
     $(LOCAL_REL_DIR)/com_android_server_UsbDeviceManager.cpp \
     $(LOCAL_REL_DIR)/com_android_server_UsbHostManager.cpp \
     $(LOCAL_REL_DIR)/com_android_server_VibratorService.cpp \
+    $(LOCAL_REL_DIR)/com_android_server_LedService.cpp \
     $(LOCAL_REL_DIR)/com_android_server_PersistentDataBlockService.cpp \
     $(LOCAL_REL_DIR)/onload.cpp
 
