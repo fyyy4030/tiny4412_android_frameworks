@@ -22,7 +22,7 @@
 
 #include <utils/misc.h>
 #include <utils/Log.h>
-#include <hardware_legacy/vibrator.h>
+#include <hardware/led_hal.h>
 
 #include <stdio.h>
 #include <sys/types.h>
@@ -33,92 +33,44 @@
 namespace android
 {
 
-
-static jint fd1;
-static jint fd2;
-static jint fd3;
-static jint fd4;
-
-char const *const LED1_FILE = "/sys/class/leds/led1/brightness";
-char const *const LED2_FILE = "/sys/class/leds/led2/brightness";
-char const *const LED3_FILE = "/sys/class/leds/led3/brightness";
-char const *const LED4_FILE = "/sys/class/leds/led4/brightness";
-
+static led_device_t* led_device;
 
 /*
 注意：C函数比Java里的声明多2个参数: (JNIEnv *env, jclass cls)
 */
 jint ledOpen(JNIEnv *env, jobject cls)
 {
-	fd1 = open(LED1_FILE,O_RDWR);
-	if(fd1 < 0){
-		ALOGI("native led open led1 errno!");
-		return -1;
-	}
-	fd2 = open(LED2_FILE,O_RDWR);
-	if(fd2 < 0){
-		ALOGI("native led open led2 errno!");
-		return -1;
-	}
-	fd3 = open(LED3_FILE,O_RDWR);
-	if(fd3 < 0){
-		ALOGI("native led open led3 errno!");
-		return -1;
-	}
-	fd4 = open(LED4_FILE,O_RDWR);
-	if(fd4 < 0){
-		ALOGI("native led open led4 errno!");
-		return -1;
-	}
-	ALOGI("native led open success!");
+	jint err;
+	hw_module_t* module;
+	hw_device_t* device;
 
-	return 0;
+	ALOGI("native ledOpen ...");
+	/* 1. hw_get_module */
+	err = hw_get_module("led", (hw_module_t const**)&module);
+	/* 2.get_device: module->methods->open*/
+	if (err == 0) {
+		err = module->methods->open(module, NULL, &device);
+		if (err == 0) {
+			led_device = (led_device_t*)device;
+			/* 3. call led open */
+			return led_device->led_open(led_device);
+		} else {
+			return -1;
+		}
+	}
+
+	return -1;
 }
 
 void ledClose(JNIEnv *env, jobject cls)
 {
-	close(fd1);
-	close(fd2);
-	close(fd3);
-	close(fd4);
-	ALOGI("native led close ...");
 
 }
 
 jint ledCtrl(JNIEnv *env, jobject cls, jint which, jint status)
 {
-	int fd = 0;
-	int ret = 0;
-	char buf[1] = {0};
-
-	if(status){
-		buf[0] = '1';
-	}else{
-		buf[0] = '0';
-	}
-	switch (which) {
-		case 1:
-			fd = fd1;
-			break;
-		case 2:
-			fd = fd2;
-			break;
-		case 3:
-			fd = fd3;
-			break;
-		case 4:
-			fd = fd4;
-			break;
-		default:
-			ALOGI("native led ctrl led:%d status:%d is invaild",which,status);
-			return -1;
-	}
-	ret = write(fd,buf,sizeof(buf));
-	if(ret < 0){
-		ALOGI("native led ctrl led:%d status:%d write fail!!!",which,status);
-	}
-	ALOGI("native led ctrl led:%d status:%d",which,status);
-	return 0;
+	ALOGI("native ledCtrl led%d:%d",which,status);
+	return led_device->led_ctrl(led_device,which,status);
 
 }
 
